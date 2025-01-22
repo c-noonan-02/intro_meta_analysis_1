@@ -18,8 +18,8 @@ response <- slope * predictor + intercept + rnorm(n=100, mean = 10, sd = 40)
 plot(predictor, response)
 
 # Q: Run a simple lm with the data you generated. How does the slope estimate compare to the slope you simulated?
-model <- lm(response ~ predictor)
-summary(model)
+model1 <- lm(response ~ predictor)
+summary(model1)
 # the slope is quite close to the one that was simulated (-0.0299)
 
 # create somewhere to store the data
@@ -37,10 +37,10 @@ for(x in 1:200){
   response <- slope * predictor + intercept + rnorm(n = sample_size, 10, 40)
   
   # use the same model as before
-  model <- lm(response ~ predictor)
+  model1 <- lm(response ~ predictor)
   
   # extract model outputs and store them in the matrix
-  store[x,] <- c(sample_size, summary(model)$coefficients[2,1:2], summary(model)$coefficients[2,4])
+  store[x,] <- c(sample_size, summary(model1)$coefficients[2,1:2], summary(model1)$coefficients[2,4])
   # 
   
 }
@@ -91,3 +91,24 @@ par(mfrow=c(1,1))
 
 
 ## BASIC META ANALYSIS
+
+# to find out a mean effect size, we can use a simple linear model
+# 1 means we fit only intercept
+model2 <- lm(slope ~ 1, data = store)
+summary(model2)
+
+# Q: What is wrong with the analysis above?
+#    It does not take into account sampling variance, or the fact that some slopes
+#    are estimated much more accurately. 
+
+# check the main r function of metafor
+?rma
+meta <- rma(yi = slope, sei = standard.error, data = store)
+meta
+# gives us an estimate of -0.2381 - much closer to our true slope
+
+# can also use in-built metafor functions to generate a nice funnel plot...
+funnel(meta, shade = "grey", back = "white", lwd = 2, col = "deeppink")
+
+# ... and forest plot
+forest(meta, cex.lab = 0.8, cex.axis = 0.8, addfit = TRUE, shade = "zebra")
