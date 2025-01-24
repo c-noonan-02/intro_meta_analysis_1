@@ -237,3 +237,36 @@ meta6
 #     Climatic / environmental variables, habitat, etc.
 
 
+## PUBLICATION BIAS
+
+# we will return to the first data set to check for publication bias
+
+# go through each row of the data frame and set the probability of being published is:
+# significant - probability of being published = 1
+# non-significant <= 30 observations (big study) - probability = 0.25
+# non-significant > 30 observations (small study) - probability = 0.75
+
+# we can then generate before and after plots
+
+store <- store[is.na(store$slope)==FALSE,]
+store$publish <- 0
+
+store$publish[store$p.value<=0.05] <- 1
+large_sample_size <- intersect(which(store$p.value>0.05), which(store$n>30))
+retain_large <- large_sample_size[as.logical(rbinom(length(large_sample_size), prob = 0.75, size =1))]
+store$publish[retain_large] <- 1
+
+small_sample_size <- intersect(which(store$p.value>0.05), which(store$n<=30))
+retain_small <- small_sample_size[as.logical(rbinom(length(small_sample_size), prob = 0.25, size = 1))]
+store$publish[retain_small] <- 1
+
+par(mfrow=c(1,2))
+plot(store$slope, (1/store$standard.error), xlab = "Slope", ylab = "Precision (1/se)", main = "Before")
+plot(store$slope[store$publish==1], (1/store$standard.error[store$publish==1]), xlab = "Slope", ylab = "Precision (1/se)", main = "After")
+
+# there are various tests that can be conducted to test for publication bias
+# one of the most information approaches is to visualise the funnel plot
+
+# we will conduct one of these tests to see how to do it though
+regtest(x = slope, sei = standard.error, data = store, model = "rma", predictor = "sei", ret.fit = FALSE)
+# very rarely gives a significant slope
