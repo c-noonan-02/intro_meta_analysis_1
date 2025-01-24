@@ -112,3 +112,60 @@ funnel(meta, shade = "grey", back = "white", lwd = 2, col = "deeppink")
 
 # ... and forest plot
 forest(meta, cex.lab = 0.8, cex.axis = 0.8, addfit = TRUE, shade = "zebra")
+
+
+## A META-ANALYSIS WITH MODERATORS AND RANDOM TERMS
+
+# this time we will generate datasets where the slope estimates (effect sizes)
+# vary as a function of another variable.
+
+# let's imagine the slopes we are generating correspond to the effect of temperature
+# on phenology
+
+# latitude predicts slope - i.e. species from further north advance timings more
+# in response to temperature
+latitude <- runif(100,0,90)
+# we randomly sample a latitude from 0,90 degree north
+slope <- -0 + latitude * -0.1 + rnorm(100,0,3)
+plot(latitude, slope)
+
+# we can then add this to the code we used before
+# we will also add an extra step - a random effect - so that slopes vary among 20 species
+# slopes 1-10 for species 1, slopes 11-20 for species 2
+
+# create somewhere to store data
+# this time we also want to save the latitude and species that the slope estimate comes from
+# we will also save a unique ID for each observation to include a residual random effect
+store2 <- matrix(nrow = 200, ncol = 7)
+
+# we can then generate 20 species random effects
+species <- rep(1:20, each = 10)
+species_effect <- rep(rnorm(20,0,2), each = 10)
+
+for (x in 1:200){
+  
+  latitude <- runif(1,0,90)
+  
+  slope <- 0 + species_effect[x] + latitude * -0.1 + rnorm(1,0,3)
+  
+  # then we select sample sizes at random from a log normal distribution , so that
+  # small sample sizes are common and large sample sizes are rare
+  sample_size <- ceiling(exp(rnorm(1,4.5,1.5)))
+  
+  # we don't want to run analyses on datasets that are too small
+  if(sample_size>3){
+    predictor <- rnorm(n = sample_size, mean = 10, sd = 10)
+    response <- intercept + predictor * slope + rnorm(n = sample_size, 0, 40)
+    
+    # we can then use the same linear model as before
+    model <- lm(response~predictor)
+    
+    # we can then extract the model outputs we want and then store them in our matrix
+    store2[x,] <- c(sample_size, summary(model)$coefficients[2,1:2],
+                    summary(model)$coefficients[2,4], latitude, species[x], x)
+
+  }}
+
+store2 <- as.data.frame(store2)
+names(store2) <- c("n", "slope", "standard.error", "p.value", "latitude", "species", "ID")
+
