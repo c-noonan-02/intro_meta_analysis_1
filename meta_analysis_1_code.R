@@ -169,3 +169,33 @@ for (x in 1:200){
 store2 <- as.data.frame(store2)
 names(store2) <- c("n", "slope", "standard.error", "p.value", "latitude", "species", "ID")
 
+# now we can try to generate a funnel plot, and run a meta-analysis
+plot(store2$slope, (1/store2$standard.error), xlab = "Slope", ylab = "Precision (1/se)")
+
+meta2 <- rma(yi = slope, sei = standard.error, data = store2)
+summary(meta2)
+
+# Q: Why doesn't the slope estimate funnel in much this time?
+#    There is heterogeneity in slopes (as seen in the I^2 value and the heterogeneity test)
+
+# we can add the model formula to include latitude as a covariate to the rma function
+meta3 <- rma(yi = slope, sei = standard.error, mods = ~latitude, data = store2)
+summary(meta3)
+# even after controlling for the effect of latitude there is still some heterogeneity
+
+# to add a random term to our meta-analysis we need to use the rma.mv function
+
+# we include the slope variance as the square of the standard error
+store2$se2 <- store2$standard.error^2
+# the function won't run with NAs so we have to remove those rows
+store3 <- store2[-which(is.na(store2$slope)==TRUE),]
+
+# we can also include an observation-level random effect
+meta4 <- rma.mv(yi = slope, V = se2, mods = ~latitude, random = ~1|species/ID, data = store3)
+meta4
+# we can see that variance estimated among species is similar to the variance we simulated
+# the residual variance is similar to what we simulated
+# our meta-analysis has done a good job of recovering
+
+
+
