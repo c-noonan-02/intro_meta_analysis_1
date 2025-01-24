@@ -198,4 +198,42 @@ meta4
 # our meta-analysis has done a good job of recovering
 
 
+## CONFRONTING A REAL DATASET
+
+# next step is to analyse a real dataset
+# we will test whether the annual productivity of birds has declined on average
+
+# import the data
+birdbrood_data <- read.csv("./data/birdbroods.csv", sep = ",", header = TRUE)
+View(birdbrood_data)
+# slope corresponds to variation in standardised breeding output regressed on year
+
+# now plot these data using a funnel plot and run a meta-analysis that includes two
+# random terms, and generate a forest plot
+
+plot(birdbrood_data$slope, (1/birdbrood_data$slope.SE), xlab = "Slope", ylab = "Precision (1/se)")
+birdbrood_data$se2 <- birdbrood_data$slope.SE^2
+meta5 <- rma.mv(yi = slope, V = se2, random = ~1|Species/id.pop, data = birdbrood_data)
+meta5
+# alternatively we could plot it this way...
+funnel(meta5)
+
+# and then the forest plot...
+forest(meta5, cex.lab = 0.8, cex.axis = 0.8, addfit = TRUE, shade = "zebra", order = "obs")
+
+# Q1: Has the brood size of the average bird species declined?
+#     No, the values cluster around zero
+
+# Q2: Is more of the variation in slope estimates distributed among or within species?
+#     Among species - higher estimate for species/id.pop
+
+# Q3: Is trend in brood size more positive for populations in protected areas?
+meta6 <- rma.mv(yi = slope, V = se2, mod = ~protected.area, random = ~1|Species/id.pop, data = birdbrood_data)
+meta6
+#     No, the trend is less positive!
+
+# Q4: If the information was available, what other terms do you think it would be
+#     worth including as random effects?
+#     Climatic / environmental variables, habitat, etc.
+
 
